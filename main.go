@@ -2,128 +2,22 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/hcorreia/go-ws-life/life"
 )
 
-const width = 10
-const boardSize = width * width
-const ALIVE = 1
-const DEAD = 0
+const tickTime = time.Millisecond * 1000
 
-type Board = [boardSize]int
+// const tickTime = time.Millisecond * 16
+// const tickTime = time.Millisecond * 120
 
-func life(board Board) Board {
-	var newBoard Board
-
-	for idx, state := range board {
-		x := idx % width
-		y := idx / width
-
-		neighboursAlive := 0
-
-		// fmt.Println("IDX", idx)
-		// fmt.Println("X Y", x, y)
-
-		for _, xi := range [3]int{-1, 0, 1} {
-			for _, yi := range [3]int{-1, 0, 1} {
-
-				// Ignore self
-				if xi == 0 && yi == 0 {
-					continue
-				}
-
-				// Check boundries
-				if ((x+xi >= 0) && (x+xi < width)) && ((y+yi >= 0) && (y+yi < width)) {
-					// fmt.Println("CHECK", (x + xi), (y + yi))
-
-					// Check is Alive
-					if board[(y+yi)*width+(x+xi)] == ALIVE {
-						neighboursAlive += 1
-					}
-				}
-			}
-		}
-
-		newBoard[idx] = board[idx]
-
-		if state == ALIVE {
-			if neighboursAlive < 2 {
-				newBoard[idx] = DEAD
-			} else if neighboursAlive > 3 {
-				newBoard[idx] = DEAD
-			}
-		} else {
-			if neighboursAlive == 3 {
-				newBoard[idx] = ALIVE
-			}
-		}
-
-		// fmt.Println("neighboursAlive", neighboursAlive)
-		// fmt.Println("")
-
-		// fmt.Println("IDX", idx)
-		// fmt.Println("isAlive", state)
-		// fmt.Println("X Y", x, y)
-	}
-
-	return newBoard
-}
-
-func genRandomBoard() Board {
-	var result Board
-
-	for idx := range result {
-		result[idx] = rand.Intn(2)
-	}
-
-	// fmt.Println(">>>>", result)
-
-	return result
-}
-
-func genBlinkerBoard() Board {
-	return Board{
-		0, 0, 0, 0, 0,
-		0, 0, 1, 0, 0,
-		0, 0, 1, 0, 0,
-		0, 0, 1, 0, 0,
-		0, 0, 0, 0, 0,
-	}
-}
-
-func genToadBoard() Board {
-	return Board{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
-		0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	}
-}
-
-func draw(board Board) []byte {
-	str, err := json.Marshal(board)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// fmt.Println(">>>>", string(str))
-
-	return str
-}
+const boardSize = 10
 
 func main() {
 	fmt.Println("Lets GO...")
@@ -134,11 +28,14 @@ func main() {
 	}
 
 	connections := map[*websocket.Conn]bool{}
-	// gameState := genRandomBoard()
-	// gameState := genBlinkerBoard()
-	gameState := genToadBoard()
+	// game := life.NewLife(boardSize)
+	// game := life.NewLifeRandom(boardSize)
+	// game := life.NewLifeBeacon()
+	game := life.NewLifeBlinker()
+	// game := life.NewLifePentaDecathlon()
+	// game := life.NewLifeToad()
 
-	// fmt.Println(">>>>", gameState)
+	// fmt.Println(">>>>", game.Board)
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.URL.String())
@@ -205,9 +102,6 @@ func main() {
 
 	go func(ctx context.Context) {
 		backof := 0
-		tickTime := time.Second * 1
-		// tickTime := time.Millisecond * 16
-
 		sleep := tickTime
 
 		ticker := time.NewTicker(sleep)
@@ -218,7 +112,7 @@ func main() {
 			case <-ticker.C:
 				ticker.Stop()
 
-				fmt.Println(">>> TICK")
+				// fmt.Println(">>> TICK")
 
 				if len(connections) > 0 {
 					if backof != 0 {
@@ -226,9 +120,11 @@ func main() {
 						sleep = tickTime
 					}
 
-					fmt.Println(">>> TICK go")
+					// fmt.Println(">>> TICK go")
 
-					result := draw(gameState)
+					result := game.Draw()
+
+					// fmt.Println(">>>", string(result))
 
 					for conn := range connections {
 						if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
@@ -238,9 +134,9 @@ func main() {
 						}
 					}
 
-					// fmt.Println("1 >>>>", gameState)
-					gameState = life(gameState)
-					// fmt.Println("2 >>>>", gameState)
+					// fmt.Println("1 >>>>", game.Board)
+					game.Life()
+					// fmt.Println("2 >>>>", game.Board)
 
 				} else if backof <= 5 {
 					backof += 1

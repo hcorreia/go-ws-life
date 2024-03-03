@@ -12,11 +12,15 @@ let ws = null;
   const draw = (data) => {
     let result = "";
 
-    for (let idx = 0; idx < data.length; idx++) {
-      if (data[idx] === 1) {
-        result += '<i class="alive"></i>';
+    console.log(data.width, data.size);
+
+    const style = `style="width: ${100 / data.width}%;"`;
+
+    for (let idx = 0; idx < data.board.length; idx++) {
+      if (data.board[idx] === 1) {
+        result += `<i class="alive" ${style}></i>`;
       } else {
-        result += '<i class="dead"></i>';
+        result += `<i class="dead" ${style}></i>`;
       }
     }
 
