@@ -13,16 +13,109 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const boardSize = 10 * 10
+const width = 10
+const boardSize = width * width
+const ALIVE = 1
+const DEAD = 0
 
-func draw() []byte {
-	result := make([]int, boardSize)
+type Board = [boardSize]int
 
-	for idx := range boardSize {
+func life(board Board) Board {
+	var newBoard Board
+
+	for idx, state := range board {
+		x := idx % width
+		y := idx / width
+
+		neighboursAlive := 0
+
+		// fmt.Println("IDX", idx)
+		// fmt.Println("X Y", x, y)
+
+		for _, xi := range [3]int{-1, 0, 1} {
+			for _, yi := range [3]int{-1, 0, 1} {
+
+				// Ignore self
+				if xi == 0 && yi == 0 {
+					continue
+				}
+
+				// Check boundries
+				if ((x+xi >= 0) && (x+xi < width)) && ((y+yi >= 0) && (y+yi < width)) {
+					// fmt.Println("CHECK", (x + xi), (y + yi))
+
+					// Check is Alive
+					if board[(y+yi)*width+(x+xi)] == ALIVE {
+						neighboursAlive += 1
+					}
+				}
+			}
+		}
+
+		newBoard[idx] = board[idx]
+
+		if state == ALIVE {
+			if neighboursAlive < 2 {
+				newBoard[idx] = DEAD
+			} else if neighboursAlive > 3 {
+				newBoard[idx] = DEAD
+			}
+		} else {
+			if neighboursAlive == 3 {
+				newBoard[idx] = ALIVE
+			}
+		}
+
+		// fmt.Println("neighboursAlive", neighboursAlive)
+		// fmt.Println("")
+
+		// fmt.Println("IDX", idx)
+		// fmt.Println("isAlive", state)
+		// fmt.Println("X Y", x, y)
+	}
+
+	return newBoard
+}
+
+func genRandomBoard() Board {
+	var result Board
+
+	for idx := range result {
 		result[idx] = rand.Intn(2)
 	}
 
-	str, err := json.Marshal(result)
+	// fmt.Println(">>>>", result)
+
+	return result
+}
+
+func genBlinkerBoard() Board {
+	return Board{
+		0, 0, 0, 0, 0,
+		0, 0, 1, 0, 0,
+		0, 0, 1, 0, 0,
+		0, 0, 1, 0, 0,
+		0, 0, 0, 0, 0,
+	}
+}
+
+func genToadBoard() Board {
+	return Board{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
+		0, 0, 0, 0, 1, 1, 1, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	}
+}
+
+func draw(board Board) []byte {
+	str, err := json.Marshal(board)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -41,6 +134,11 @@ func main() {
 	}
 
 	connections := map[*websocket.Conn]bool{}
+	// gameState := genRandomBoard()
+	// gameState := genBlinkerBoard()
+	gameState := genToadBoard()
+
+	// fmt.Println(">>>>", gameState)
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.URL.String())
@@ -128,15 +226,21 @@ func main() {
 						sleep = tickTime
 					}
 
-					result := draw()
-
 					fmt.Println(">>> TICK go")
+
+					result := draw(gameState)
 
 					for conn := range connections {
 						if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
 							log.Println("ERROR WriteMessage", err.Error())
+
+							// TODO: maybe remove this conn
 						}
 					}
+
+					// fmt.Println("1 >>>>", gameState)
+					gameState = life(gameState)
+					// fmt.Println("2 >>>>", gameState)
 
 				} else if backof <= 5 {
 					backof += 1
