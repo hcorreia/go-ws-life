@@ -1,4 +1,4 @@
-module github.com/hcorreia/go-life
+module github.com/hcorreia/go-ws-life
 
 go 1.22.0
 

@@ -47,15 +47,18 @@ let ws = null;
       console.log("timeout", timeoutSecs * tryCount * 2);
       setTimeout(wsConnect, timeoutSecs * tryCount * 2);
 
-      if (tryCount <= 10) {
+      if (tryCount <= 5) {
         tryCount += 1;
       }
     });
 
     ws.addEventListener("message", (e) => {
-      //   console.log("message", e);
-
-      draw(JSON.parse(e.data));
+      try {
+        draw(JSON.parse(e.data));
+      } catch (err) {
+        console.error(err);
+        console.log("message", e);
+      }
     });
 
     ws.addEventListener("error", (e) => {

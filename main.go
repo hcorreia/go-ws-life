@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"math/rand"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -40,7 +40,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	connections := []*websocket.Conn{}
+	connections := map[*websocket.Conn]bool{}
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.Method, r.URL.String())
@@ -72,7 +72,7 @@ func main() {
 			return
 		}
 
-		connections = append(connections, conn)
+		connections[conn] = true
 
 		fmt.Println("CONS", connections)
 
@@ -93,41 +93,70 @@ func main() {
 			}
 		}
 
-		for idx, c := range connections {
-			if conn == c {
-				fmt.Println("BEFORE", connections)
-				connections = slices.Delete(connections, idx, idx+1)
-				fmt.Println("AFTER ", connections)
-				break
-			}
-		}
+		fmt.Println("BEFORE", connections)
+		delete(connections, conn)
+		fmt.Println("AFTER ", connections)
 
 		fmt.Printf("%s DISCONNECT\n", conn.RemoteAddr())
 	})
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 
-	go func() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func(ctx context.Context) {
+		backof := 0
+		tickTime := time.Second * 1
+		// tickTime := time.Millisecond * 16
+
+		sleep := tickTime
+
+		ticker := time.NewTicker(sleep)
+		defer ticker.Stop()
+
 		for {
-			time.Sleep(time.Second * 1)
-			// time.Sleep(time.Millisecond * 16)
-			fmt.Println(">>> TICK")
+			select {
+			case <-ticker.C:
+				ticker.Stop()
 
-			if len(connections) > 0 {
+				fmt.Println(">>> TICK")
 
-				result := draw()
-
-				fmt.Println(">>> TICK go ")
-
-				for _, conn := range connections {
-
-					if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
-						log.Println("ERROR WriteMessage", err.Error())
+				if len(connections) > 0 {
+					if backof != 0 {
+						backof = 0
+						sleep = tickTime
 					}
+
+					result := draw()
+
+					fmt.Println(">>> TICK go")
+
+					for conn := range connections {
+						if err := conn.WriteMessage(websocket.TextMessage, result); err != nil {
+							log.Println("ERROR WriteMessage", err.Error())
+						}
+					}
+
+				} else if backof <= 5 {
+					backof += 1
+					sleep = time.Second * (2 * time.Duration(backof))
+
 				}
+
+				if backof > 0 {
+					log.Println(">>> TICK SLEEP", sleep)
+				}
+
+				ticker.Reset(sleep)
+
+			case <-ctx.Done():
+				fmt.Println(">>> TICK DONE")
+
+				return
 			}
 		}
-	}()
+	}(ctx)
 
 	log.Fatalln(http.ListenAndServe(":8080", nil))
 }
