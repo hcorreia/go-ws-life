@@ -12,12 +12,12 @@ import (
 	"github.com/hcorreia/go-ws-life/life"
 )
 
-const tickTime = time.Millisecond * 1000
+const tickTime = time.Millisecond * 33
 
 // const tickTime = time.Millisecond * 16
 // const tickTime = time.Millisecond * 120
 
-const boardSize = 10
+const boardSize = 100
 
 func main() {
 	fmt.Println("Lets GO...")
@@ -29,9 +29,9 @@ func main() {
 
 	connections := map[*websocket.Conn]bool{}
 	// game := life.NewLife(boardSize)
-	// game := life.NewLifeRandom(boardSize)
+	game := life.NewLifeRandom(boardSize)
 	// game := life.NewLifeBeacon()
-	game := life.NewLifeBlinker()
+	// game := life.NewLifeBlinker()
 	// game := life.NewLifePentaDecathlon()
 	// game := life.NewLifeToad()
 

@@ -21,7 +21,7 @@
         height: 0;
         padding-bottom: 100%;
       }
-      #canvas {
+      #canvas_div {
         position: absolute;
         display: flex;
         flex-wrap: wrap;
@@ -32,22 +32,26 @@
         background: #eef;
         border: solid 1px #666;
       }
-      #canvas i {
+      #canvas_div i {
         display: block;
         width: 10%;
       }
-      #canvas i.dead {
+      #canvas_div i.dead {
         background: #ccc;
       }
-      #canvas i.alive {
+      #canvas_div i.alive {
         background: #333;
       }
-      #canvas i::before {
+      #canvas_div i::before {
         content: "";
         display: block;
         width: 100%;
         height: 0;
         padding-bottom: 100%;
+      }
+      #canvas {
+        position: relative;
+        max-width: 100%;
       }
     </style>
   </head>
@@ -57,7 +61,8 @@
 
       <div class="container">
         <div id="content">
-          <div id="canvas"></div>
+          <div id="canvas_div"></div>
+          <canvas id="canvas"></canvas>
         </div>
       </div>
     </div>
