@@ -1,13 +1,21 @@
 package life
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"image"
+	"image/color"
+	"image/png"
 	"log"
 	"math/rand"
 )
 
 const ALIVE = 1
 const DEAD = 0
+
+var aliveColor = color.RGBA{51, 51, 51, 255}
+var deadColor = color.RGBA{204, 204, 204, 255}
 
 type Life struct {
 	Width int   `json:"width"`
@@ -81,6 +89,43 @@ func (life *Life) Draw() []byte {
 	}
 
 	return str
+}
+
+func (life *Life) DrawImageDataUrl() ([]byte, error) {
+	m := image.NewRGBA(image.Rectangle{
+		Min: image.Point{0, 0},
+		Max: image.Point{life.Width, life.Width},
+	})
+
+	for idx, state := range life.Board {
+		x := idx % life.Width
+		y := idx / life.Width
+
+		if state == ALIVE {
+			m.SetRGBA(x, y, aliveColor)
+		} else {
+			m.SetRGBA(x, y, deadColor)
+		}
+	}
+
+	// b := []byte{}
+	w := bytes.NewBuffer([]byte{})
+
+	err := png.Encode(w, m)
+	if err != nil {
+		log.Fatalln(err)
+
+		return nil, err
+	}
+
+	b := w.Bytes()
+
+	b64 := make([]byte, base64.StdEncoding.EncodedLen(len(b)))
+	base64.RawStdEncoding.Encode(b64, b)
+
+	result := bytes.Join([][]byte{[]byte("data:image/png;base64,"), b64}, []byte{})
+
+	return result, nil
 }
 
 func NewLife(width int) *Life {

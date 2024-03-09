@@ -12,10 +12,12 @@
         box-sizing: border-box;
       }
       .container {
-        max-width: 800px;
         padding: 2rem;
       }
       #content {
+        max-width: 800px;
+      }
+      #frame {
         position: relative;
         width: 100%;
         height: 0;
@@ -53,6 +55,18 @@
         position: relative;
         max-width: 100%;
       }
+      #canvas_img {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        min-width: 100px;
+        max-width: 100%;
+        height: auto;
+        width: 100%;
+
+        image-rendering: pixelated;
+      }
     </style>
   </head>
   <body>
@@ -61,8 +75,11 @@
 
       <div class="container">
         <div id="content">
-          <div id="canvas_div"></div>
-          <canvas id="canvas"></canvas>
+          <div id="frame">
+            <div id="canvas_div"></div>
+            <canvas id="canvas"></canvas>
+            <img id="canvas_img" />
+          </div>
         </div>
       </div>
     </div>

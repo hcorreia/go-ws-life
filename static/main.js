@@ -6,6 +6,7 @@ let ws = null;
   let tryCount = 0;
   const canvasDiv = document.getElementById("canvas_div");
   const canvas = document.getElementById("canvas");
+  const canvasImg = document.getElementById("canvas_img");
   const ctx = canvas.getContext("2d");
   //   const size = 10 * 10;
   let lastWidth = 0;
@@ -105,7 +106,9 @@ let ws = null;
 
     ws.addEventListener("message", (e) => {
       try {
-        drawCanvas(JSON.parse(e.data));
+        canvasImg.setAttribute("src", e.data);
+
+        // drawCanvas(JSON.parse(e.data));
         // drawHtml(JSON.parse(e.data));
       } catch (err) {
         console.error(err);

@@ -12,10 +12,12 @@ import (
 	"github.com/hcorreia/go-ws-life/life"
 )
 
-const tickTime = time.Millisecond * 33
-
 // const tickTime = time.Millisecond * 16
+// const tickTime = time.Millisecond * 33
+const tickTime = time.Millisecond * 41
+
 // const tickTime = time.Millisecond * 120
+// const tickTime = time.Millisecond * 1000
 
 const boardSize = 100
 
@@ -122,7 +124,12 @@ func main() {
 
 					// fmt.Println(">>> TICK go")
 
-					result := game.Draw()
+					// result := game.Draw()
+
+					result, err := game.DrawImageDataUrl()
+					if err != nil {
+						result = []byte{}
+					}
 
 					// fmt.Println(">>>", string(result))
 
