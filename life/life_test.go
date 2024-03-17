@@ -16,7 +16,6 @@ func BenchmarkNewLifeRandom(b *testing.B) {
 }
 
 func BenchmarkDrawImageDataUrl(b *testing.B) {
-
 	for _, boardSize := range []int{1, 10, 100, 1_000, 1_440, 10_000} {
 		game := life.NewLifeRandom(boardSize)
 

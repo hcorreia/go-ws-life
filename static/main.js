@@ -106,6 +106,8 @@ let ws = null;
 
     ws.addEventListener("message", (e) => {
       try {
+        // console.log("message 1", e.data);
+
         canvasImg.setAttribute("src", e.data);
 
         // drawCanvas(JSON.parse(e.data));

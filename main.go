@@ -24,6 +24,10 @@ const boardSize = 100
 func main() {
 	fmt.Println("Lets GO...")
 
+	// life.TestTheThing()
+
+	// return
+
 	homeTempl, err := template.New("homepage.templ").ParseFiles("templates/homepage.templ")
 	if err != nil {
 		log.Fatalln(err)
@@ -31,11 +35,14 @@ func main() {
 
 	connections := map[*websocket.Conn]bool{}
 	// game := life.NewLife(boardSize)
-	game := life.NewLifeRandom(boardSize)
+	// game := life.NewLifeRandom(boardSize)
 	// game := life.NewLifeBeacon()
 	// game := life.NewLifeBlinker()
 	// game := life.NewLifePentaDecathlon()
 	// game := life.NewLifeToad()
+
+	game := life.NewLifeNativeRust(boardSize)
+	defer game.Free()
 
 	// fmt.Println(">>>>", game.Board)
 
